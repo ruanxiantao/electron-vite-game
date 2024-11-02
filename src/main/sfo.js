@@ -1,4 +1,5 @@
 import fs from 'fs'
+import iconv from 'iconv-lite'
 
 // 定义SFO文件的头部结构
 class Header {
@@ -61,27 +62,39 @@ export class SFOParser {
     return { header, indexTableEntries, values };
   }
 
-  readString(buffer, offset) {
-    let str = '';
-    let i = 0;
-    while (true) {
-      const charCode = buffer.readUInt8(offset + i);
-      if (charCode === 0) break;
-      str += String.fromCharCode(charCode);
-      i++;
-    }
-    return str;
-  }
+  // readString(buffer, offset) {
+  //   let str = '';
+  //   let i = 0;
+  //   while (true) {
+  //     const charCode = buffer.readUInt8(offset + i);
+      
+  //     if (charCode === 0) break;
+  //     str += String.fromCharCode(charCode);
+      
+  //     i++;
+  //   }
+  //   return str;
+  // }
 
   // 读取字符串
+  // readString(buffer, offset, maxLength) {
+  //   let str = '';
+  //   for (let i = 0; i < maxLength; i++) {
+  //     const charCode = buffer.readUInt8(offset + i);
+  //     if (charCode === 0) break;
+  //     str += String.fromCharCode(charCode);
+  //   }
+  //   return str;
+  // }
+
   readString(buffer, offset, maxLength) {
-    let str = '';
+    let charCodeArray = [];
     for (let i = 0; i < maxLength; i++) {
       const charCode = buffer.readUInt8(offset + i);
       if (charCode === 0) break;
-      str += String.fromCharCode(charCode);
+      charCodeArray.push(charCode);
     }
-    return str;
+    return iconv.decode(Buffer.from(charCodeArray), 'utf-8');
   }
 
   // 获取特定键的值

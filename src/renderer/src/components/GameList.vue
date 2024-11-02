@@ -1,10 +1,36 @@
 <template>
     <div>
-        <el-card style="max-width: 480px" v-for="game in gameList" :key="game.id" @click="launchGame(game.id)">
-            <h1>aaa</h1>
-            <img :src="game.info.cover" style="width: 100%" />
-            <span>{{ game.info.name }}</span>
-        </el-card>
+        <div class="common-layout">
+            <el-container>
+                <el-aside width="200px">
+                    <el-menu class="el-menu-vertical-demo">
+                        <el-sub-menu index="1">
+                            <template #title>
+                                <!-- <el-icon>
+                                    <location />
+                                </el-icon> -->
+                                <span>模拟器</span>
+                            </template>
+                            <div v-for="simulator in simulatorList" :key="simulator">
+                                <el-menu-item :index="simulator" @click="switchSimulator(simulator)">{{ simulator }}</el-menu-item>
+                            </div>
+                            
+                        </el-sub-menu>
+                    </el-menu>
+                </el-aside>
+                <el-main>
+                    <el-space wrap>
+                        <el-card style="width: 300px" class="box-card" v-for="game in gameList" :key="game.id"
+                            @click="launchGame(game.id)">
+                            <el-image style="width: 200px; height: 200px" :src="game.info.cover" fit="contain" />
+                            <div>{{ game.info.name }}</div>
+                        </el-card>
+                    </el-space>
+                </el-main>
+            </el-container>
+
+        </div>
+
     </div>
 </template>
 
@@ -14,11 +40,16 @@ import { type Game } from '../types/index';
 // import icon from '../../../../resources/icon.png'
 
 let gameList = reactive<Game[]>([])
+let simulatorList = ['PSP', 'GBA']
 
 onMounted(() => {
     listenerFolder()
     init();
 })
+
+function switchSimulator(simulator) {
+    console.log(simulator)
+}
 
 function launchGame(id) {
     const ipcRenderer = window.electron.ipcRenderer;

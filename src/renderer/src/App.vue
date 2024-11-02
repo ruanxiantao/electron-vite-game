@@ -20,5 +20,5 @@ import GameList from './components/GameList.vue'
       <a target="_blank" rel="noreferrer" @click="ipcHandle">Send IPC</a>
     </div>
   </div> -->
-  <GameList>你好</GameList>
+  <GameList></GameList>
 </template>
