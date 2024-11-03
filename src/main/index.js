@@ -79,11 +79,11 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('readDirectory', (event) => {
-    return fs.readdirSync("roms")
+    return fs.readdirSync("../roms")
   })
 
   ipcMain.handle("readIsoCover", (event, fileName) => {
-    const isoFilePath = join("roms", fileName); // 执行 7z 命令获取封面 
+    const isoFilePath = join("../roms", fileName); // 执行 7z 命令获取封面 
     const fileToExtract = 'PSP_GAME/ICON0.PNG'; // ISO文件中要提取的文件路径
     let folder = fileName.substring(0, fileName.indexOf('.'))
     const outputDir = join('../extracted_files', folder); // 提取后的文件保存目录
@@ -105,7 +105,7 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle("readIsoName", (event, fileName) => {
-    const isoFilePath = join("roms", fileName) // 执行 7z 命令获取名称 
+    const isoFilePath = join("../roms", fileName) // 执行 7z 命令获取名称 
     const fileToExtract = 'PSP_GAME/PARAM.SFO'; // ISO文件中要提取的文件路径
     let folder = fileName.substring(0, fileName.indexOf('.'))
     const outputDir = join('../extracted_files', folder); // 提取后的文件保存目录
@@ -129,7 +129,7 @@ app.whenReady().then(() => {
   ipcMain.on("launchGame", (event, id) => {
     console.log("aaa" + id)
     let pspPath = "E:/software/ppsspp_win/PPSSPPWindows64.exe"
-    let file = join("roms", id)
+    let file = join("../roms", id)
     console.log("aaa" + file)
     execFile(pspPath, [file], (error, stdout, stderr) => {
       console.log(error);

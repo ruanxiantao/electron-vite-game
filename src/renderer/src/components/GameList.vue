@@ -1,54 +1,51 @@
 <template>
     <div>
         <div class="common-layout">
-            <el-container>
-                <el-aside width="200px">
-                    <el-menu class="el-menu-vertical-demo">
-                        <el-sub-menu index="1">
-                            <template #title>
-                                <!-- <el-icon>
-                                    <location />
-                                </el-icon> -->
-                                <span>模拟器</span>
-                            </template>
-                            <div v-for="simulator in simulatorList" :key="simulator">
-                                <el-menu-item :index="simulator" @click="switchSimulator(simulator)">{{ simulator }}</el-menu-item>
+            <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 20px;">
+                <el-input v-model="searchword" style="width: 240px; " placeholder="请输入游戏名称" />
+            </div>
+
+            <el-scrollbar height="400px">
+                <el-space direction="vertical">
+                    <div v-for="game in gameList" :key="game.id">
+                        <el-card v-if="isShow(game.info.name)" style="width: 800px;"
+                            class="box-card" @click="launchGame(game.id)">
+                            <div style="display: flex; align-items: center;">
+                                <el-image :src="game.info.cover" fit="contain" style="margin-right: 10px;" />
+                                <span style="font-weight: bold;">{{ game.info.name }}</span>
                             </div>
-                            
-                        </el-sub-menu>
-                    </el-menu>
-                </el-aside>
-                <el-main>
-                    <el-space wrap>
-                        <el-card style="width: 300px" class="box-card" v-for="game in gameList" :key="game.id"
-                            @click="launchGame(game.id)">
-                            <el-image style="width: 200px; height: 200px" :src="game.info.cover" fit="contain" />
-                            <div>{{ game.info.name }}</div>
                         </el-card>
-                    </el-space>
-                </el-main>
-            </el-container>
+                    </div>
+                </el-space>
+            </el-scrollbar>
 
+            <div style="display: flex; justify-content: right; align-items: center; margin-top: 50px;">
+                <span>共{{ gamecount }}个游戏</span>
+            </div>
         </div>
-
     </div>
 </template>
 
 <script setup lang="ts" name="GameList">
-import { onMounted, reactive } from 'vue';
+import { onMounted, reactive, ref, computed } from 'vue';
 import { type Game } from '../types/index';
 // import icon from '../../../../resources/icon.png'
 
 let gameList = reactive<Game[]>([])
-let simulatorList = ['PSP', 'GBA']
+let searchword = ref('')
+let gamecount = computed(() => {
+    return gameList.filter(game => isShow(game.info.name)).length;
+})
 
 onMounted(() => {
     listenerFolder()
     init();
 })
 
-function switchSimulator(simulator) {
-    console.log(simulator)
+function isShow(gameName: string) {
+    let name: string = gameName.toLowerCase();
+    let word: string = searchword.value.toLowerCase();
+    return name.includes(word);
 }
 
 function launchGame(id) {
