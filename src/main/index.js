@@ -1,6 +1,6 @@
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import { exec, execFile } from 'child_process'
-import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, shell, dialog } from 'electron'
 import fs from 'fs'
 import { join, resolve } from 'path'
 import icon from '../../resources/icon.png?asset'
@@ -9,8 +9,8 @@ import { SFOParser } from './sfo.js'
 function createWindow() {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
+    width: 1280,
+    height: 720,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
@@ -51,6 +51,7 @@ function createWindow() {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+  return mainWindow;
 }
 
 // This method will be called when Electron has finished
@@ -70,7 +71,7 @@ app.whenReady().then(() => {
   // IPC test
   ipcMain.on('ping', () => console.log('pong'))
 
-  createWindow()
+  let mainWindow = createWindow()
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
@@ -119,10 +120,7 @@ app.whenReady().then(() => {
     exec(`"../7-Zip/7z" e "${isoFilePath}" "${fileToExtract}" -o"${outputDir}"`, (error, stdout, stderr) => {
       if (error) {
         console.error(`exec error: ${error}`);
-        return "unknown";
       }
-      let sfoParser = new SFOParser(sfo)
-      return sfoParser.getValue("TITLE")
     });
   })
 
@@ -136,6 +134,34 @@ app.whenReady().then(() => {
       console.log(stdout);
       console.log(stderr);
     })
+  })
+
+  ipcMain.on("openSetupPspSimulatorDialog", (event) => {
+    dialog.showOpenDialog({
+      "title": "请选择PSP模拟器的exe文件",
+      "filters": [
+        { name: 'exe File', extensions: ['exe'] }
+      ]
+    }).then(result => {
+      console.log("result=", result)
+      if (result.canceled) {
+        return
+      }
+      let filePath = result.filePaths[0];
+      fs.writeFileSync('../config/pspSimulatorFilePathConfig.txt', filePath)
+      mainWindow.webContents.send('pspSimulatorPathUpdate')
+    }).catch(error => {
+      console.log(error)
+    })
+  })
+
+  ipcMain.handle("readPspSimulatorPath", (event) => {
+    let configPath = '../config/pspSimulatorFilePathConfig.txt';
+    let exists = fs.existsSync(configPath)
+    if (!exists) {
+      return null
+    }
+    return fs.readFileSync(configPath).toString('utf-8')
   })
 })
 
