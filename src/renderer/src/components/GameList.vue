@@ -30,7 +30,7 @@
                         </div>
                     </div>
                     <div v-else>
-                        <el-empty description="没有游戏" :image-size="300" />
+                        <el-empty :description="`请将游戏rom文件放在${pspRomPath}文件夹下`" :image-size="300" />
                     </div>
                 </el-space>
             </el-scrollbar>
@@ -53,6 +53,7 @@ let gamecount = computed(() => {
     return gameList.filter(game => isShow(game.info.name)).length;
 })
 let pspSimulatorPath = ref('');
+let pspRomPath = ref('');
 
 onMounted(() => {
     listener()
@@ -106,6 +107,17 @@ async function init() {
         readIsoName(gameFile.filePath).then((data) => updateGameName(gameFile.fileName, data))
     })
     readPspSimulatorPath();
+    readPspRomPath();
+}
+
+async function readPspRomPath() {
+    const ipcRenderer = window.electron.ipcRenderer;
+    let path = await ipcRenderer.invoke("readPspRomPath")
+    if (!path) {
+        pspRomPath.value = 'rom路径创建失败'
+        return
+    }
+    pspRomPath.value = path;
 }
 
 async function readPspSimulatorPath() {
@@ -116,7 +128,6 @@ async function readPspSimulatorPath() {
         return
     }
     pspSimulatorPath.value = path;
-
 }
 
 function updateGameCover(fileName: string, gameCoverData: BlobPart) {

@@ -177,6 +177,13 @@ app.whenReady().then(() => {
     }
     return fs.readFileSync(configPath).toString('utf-8')
   })
+
+  ipcMain.handle("readPspRomPath", (event) => {
+    if (!fs.existsSync(romFolder)) {
+      fs.mkdirSync(romFolder)
+    }
+    return resolve(romFolder)
+  })
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common
