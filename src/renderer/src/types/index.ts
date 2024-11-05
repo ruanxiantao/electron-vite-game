@@ -6,4 +6,5 @@ export interface Game{
 export interface GameInfo {
     cover: string
     name: string
+    path: string
 }

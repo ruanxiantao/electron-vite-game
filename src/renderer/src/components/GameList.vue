@@ -7,24 +7,30 @@
                 <div style="display: flex; flex-grow: 1; justify-content: center;">
                     <el-input v-model="searchword" style="width: 240px;" placeholder="请输入游戏名称" />
                 </div>
-                <el-button type="danger" round style="margin-left: auto;" @click="setupPspSimulator">设置PSP模拟器路径</el-button>
+                <el-button type="danger" round style="margin-left: auto;"
+                    @click="setupPspSimulator">设置PSP模拟器路径</el-button>
             </div>
             <div style="display: flex; flex-grow: 1; justify-content: right; margin-top: 10px; margin-bottom: 10px;">
                 <span>{{ pspSimulatorPath }}</span>
             </div>
 
-            <el-scrollbar height="500px">
+            <el-scrollbar max-height="500px" height="500px">
                 <el-space direction="vertical">
-                    <div v-for="game in gameList" :key="game.id">
-                        <el-card v-if="isShow(game.info.name)" style="width: 1000px;" class="box-card">
-                            <div style="display: flex; align-items: center;">
-                                <el-image :src="game.info.cover" fit="contain"
-                                    style="margin-right: 10px; height: 100px;" />
-                                <span style="font-weight: bold;">{{ game.info.name }}</span>
-                                <el-button type="success" style="margin-left: auto;" @click="launchGame(game.id)"
-                                    round>开始游戏</el-button>
-                            </div>
-                        </el-card>
+                    <div v-if="gameList.length > 0">
+                        <div v-for="game in gameList" :key="game.id">
+                            <el-card v-if="isShow(game.info.name)" style="width: 1000px;" class="box-card">
+                                <div style="display: flex; align-items: center;">
+                                    <el-image :src="game.info.cover" fit="contain"
+                                        style="margin-right: 10px; height: 100px;" />
+                                    <span style="font-weight: bold;">{{ game.info.name }}</span>
+                                    <el-button type="success" style="margin-left: auto;"
+                                        @click="launchGame(game.info.path)" round>开始游戏</el-button>
+                                </div>
+                            </el-card>
+                        </div>
+                    </div>
+                    <div v-else>
+                        <el-empty description="没有游戏" :image-size="300" />
                     </div>
                 </el-space>
             </el-scrollbar>
@@ -49,7 +55,7 @@ let gamecount = computed(() => {
 let pspSimulatorPath = ref('');
 
 onMounted(() => {
-    listenerFolder()
+    listener()
     init();
 })
 
@@ -64,12 +70,12 @@ function isShow(gameName: string) {
     return name.includes(word);
 }
 
-function launchGame(id) {
+function launchGame(path) {
     const ipcRenderer = window.electron.ipcRenderer;
-    ipcRenderer.send("launchGame", id)
+    ipcRenderer.send("launchGame", pspSimulatorPath.value, path)
 }
 
-function listenerFolder() {
+function listener() {
     const ipcRenderer = window.electron.ipcRenderer;
     ipcRenderer.on('folderUpdate', (event, message) => {
         gameList.forEach(item => {
@@ -86,17 +92,18 @@ function listenerFolder() {
 
 async function init() {
     let list = await readDirectory()
-    list.forEach((fileName: string) => {
+    list.forEach((gameFile) => {
         let game = {
-            id: fileName,
+            id: gameFile.fileName,
             info: {
                 cover: psp,
-                name: ""
+                name: "",
+                path: gameFile.filePath
             }
         }
         gameList.push(game)
-        readIsoCover(fileName).then((data) => updateGameCover(fileName, data))
-        readIsoName(fileName).then((data) => updateGameName(fileName, data))
+        readIsoCover(gameFile.filePath).then((data) => updateGameCover(gameFile.fileName, data))
+        readIsoName(gameFile.filePath).then((data) => updateGameName(gameFile.fileName, data))
     })
     readPspSimulatorPath();
 }
@@ -105,11 +112,11 @@ async function readPspSimulatorPath() {
     const ipcRenderer = window.electron.ipcRenderer;
     let path = await ipcRenderer.invoke("readPspSimulatorPath")
     if (!path) {
-        pspSimulatorPath.value = '未设置PSP模拟器路径' 
+        pspSimulatorPath.value = '未设置PSP模拟器路径'
         return
     }
     pspSimulatorPath.value = path;
-    
+
 }
 
 function updateGameCover(fileName: string, gameCoverData: BlobPart) {
@@ -140,9 +147,9 @@ async function readDirectory() {
     return gameList;
 }
 
-async function readIsoCover(fileName) {
+async function readIsoCover(filePath) {
     const ipcRenderer = window.electron.ipcRenderer;
-    let conver = await ipcRenderer.invoke("readIsoCover", fileName)
+    let conver = await ipcRenderer.invoke("readIsoCover", filePath)
     return conver;
 }
 

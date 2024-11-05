@@ -2,7 +2,7 @@ import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import { exec, execFile } from 'child_process'
 import { app, BrowserWindow, ipcMain, shell, dialog } from 'electron'
 import fs from 'fs'
-import { join, resolve } from 'path'
+import { join, resolve, basename, extname } from 'path'
 import icon from '../../resources/icon.png?asset'
 import { SFOParser } from './sfo.js'
 
@@ -21,7 +21,10 @@ function createWindow() {
   })
 
   // 要监听的目录
-  const dir = '../extracted_files/';
+  const dir = '../extracted_files';
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir)
+  }
 
   // 选项，包括是否递归监听子目录等
   const options = { recursive: true };
@@ -79,23 +82,33 @@ app.whenReady().then(() => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
 
+  let romFolder = '../roms';
+
   ipcMain.handle('readDirectory', (event) => {
-    return fs.readdirSync("../roms")
+    if (!fs.existsSync(romFolder)) {
+      fs.mkdirSync(romFolder)
+    }
+    let fileList = fs.readdirSync(romFolder)
+    return fileList.map(file => ({
+      fileName: file,
+      filePath: resolve(romFolder, file)
+    }))
   })
 
-  ipcMain.handle("readIsoCover", (event, fileName) => {
-    const isoFilePath = join("../roms", fileName); // 执行 7z 命令获取封面 
+  ipcMain.handle("readIsoCover", (event, filePath) => {
     const fileToExtract = 'PSP_GAME/ICON0.PNG'; // ISO文件中要提取的文件路径
-    let folder = fileName.substring(0, fileName.indexOf('.'))
+    let fileNameWithExtension = basename(filePath);
+    let fileExtension = extname(filePath); // 获取文件扩展名
+    let folder = fileNameWithExtension.slice(0, -fileExtension.length);
     const outputDir = join('../extracted_files', folder); // 提取后的文件保存目录
-    let pic = resolve(join(outputDir, "ICON0.PNG"))
+    let pic = join(outputDir, "ICON0.PNG")
     // 使用7z e命令提取文件
     let exists = fs.existsSync(pic)
     if (exists) {
       return fs.readFileSync(pic)
     }
 
-    exec(`"../7-Zip/7z" e "${isoFilePath}" "${fileToExtract}" -o"${outputDir}"`, (error, stdout, stderr) => {
+    exec(`"../7-Zip/7z" e "${filePath}" "${fileToExtract}" -o"${outputDir}"`, (error, stdout, stderr) => {
       if (error) {
         console.error(`exec error: ${error}`);
         return null;
@@ -105,31 +118,28 @@ app.whenReady().then(() => {
 
   })
 
-  ipcMain.handle("readIsoName", (event, fileName) => {
-    const isoFilePath = join("../roms", fileName) // 执行 7z 命令获取名称 
+  ipcMain.handle("readIsoName", (event, filePath) => {
     const fileToExtract = 'PSP_GAME/PARAM.SFO'; // ISO文件中要提取的文件路径
-    let folder = fileName.substring(0, fileName.indexOf('.'))
+    let fileNameWithExtension = basename(filePath);
+    let fileExtension = extname(filePath); // 获取文件扩展名
+    let folder = fileNameWithExtension.slice(0, -fileExtension.length);
     const outputDir = join('../extracted_files', folder); // 提取后的文件保存目录
-    let sfo = resolve(join(outputDir, "PARAM.SFO"))
+    let sfo = join(outputDir, "PARAM.SFO")
     // 使用7z e命令提取文件
     let exists = fs.existsSync(sfo)
     if (exists) {
       let sfoParser = new SFOParser(sfo)
       return sfoParser.getValue("TITLE")
     }
-    exec(`"../7-Zip/7z" e "${isoFilePath}" "${fileToExtract}" -o"${outputDir}"`, (error, stdout, stderr) => {
+    exec(`"../7-Zip/7z" e "${filePath}" "${fileToExtract}" -o"${outputDir}"`, (error, stdout, stderr) => {
       if (error) {
         console.error(`exec error: ${error}`);
       }
     });
   })
 
-  ipcMain.on("launchGame", (event, id) => {
-    console.log("aaa" + id)
-    let pspPath = "E:/software/ppsspp_win/PPSSPPWindows64.exe"
-    let file = join("../roms", id)
-    console.log("aaa" + file)
-    execFile(pspPath, [file], (error, stdout, stderr) => {
+  ipcMain.on("launchGame", (event, simulatorPath, path) => {
+    execFile(simulatorPath, [path], (error, stdout, stderr) => {
       console.log(error);
       console.log(stdout);
       console.log(stderr);
@@ -148,7 +158,11 @@ app.whenReady().then(() => {
         return
       }
       let filePath = result.filePaths[0];
-      fs.writeFileSync('../config/pspSimulatorFilePathConfig.txt', filePath)
+      let configFolder = '../config'
+      if (!fs.existsSync(configFolder)) {
+        fs.mkdirSync(configFolder)
+      }
+      fs.writeFileSync(join(configFolder, 'pspSimulatorFilePathConfig.txt'), filePath)
       mainWindow.webContents.send('pspSimulatorPathUpdate')
     }).catch(error => {
       console.log(error)
