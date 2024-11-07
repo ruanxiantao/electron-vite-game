@@ -2,7 +2,7 @@ import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import { exec, execFile } from 'child_process'
 import { app, BrowserWindow, ipcMain, shell, dialog } from 'electron'
 import fs from 'fs'
-import { join, resolve, basename, extname } from 'path'
+import { join, resolve, basename, extname, dirname } from 'path'
 import icon from '../../resources/icon.png?asset'
 import { SFOParser } from './sfo.js'
 
@@ -19,24 +19,6 @@ function createWindow() {
       sandbox: false,
     }
   })
-
-  // 要监听的目录
-  const dir = '../extracted_files';
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir)
-  }
-
-  // 选项，包括是否递归监听子目录等
-  const options = { recursive: true };
-
-  // 回调函数，当文件发生变化时被调用
-  const listener = (eventType, filename) => {
-    let isoName = filename.substring(0, filename.indexOf("\\"));
-    mainWindow.webContents.send("folderUpdate", isoName)
-  };
-
-  // 开始监听
-  fs.watch(dir, options, listener);
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
@@ -83,15 +65,46 @@ app.whenReady().then(() => {
   })
 
   let romFolder = '../roms';
+  let extractedFilesFolder = '../extracted_files'
+  let configFolder = '../config'
+  let appDir = ''
+  if (!is.dev) {
+    appDir = dirname(process.env.PORTABLE_EXECUTABLE_FILE);
+  }
+  let romPath = join(appDir, romFolder)
+  let extractedFilesPath = join(appDir, extractedFilesFolder)
+  let configPath = join(appDir, configFolder)
+
+  let configFileName = 'pspSimulatorFilePathConfig.txt'
+
+  if (!fs.existsSync(romPath)) {
+    fs.mkdirSync(romPath)
+  }
+  if (!fs.existsSync(extractedFilesPath)) {
+    fs.mkdirSync(extractedFilesPath)
+  }
+  if (!fs.existsSync(configPath)) {
+    fs.mkdirSync(configPath)
+  }
+
+  // 要监听的目录
+  // 选项，包括是否递归监听子目录等
+  const options = { recursive: true };
+
+  // 回调函数，当文件发生变化时被调用
+  const listener = (eventType, filename) => {
+    let isoName = filename.substring(0, filename.indexOf("\\"));
+    mainWindow.webContents.send("folderUpdate", isoName)
+  };
+
+  // 开始监听
+  fs.watch(extractedFilesPath, options, listener);
 
   ipcMain.handle('readDirectory', (event) => {
-    if (!fs.existsSync(romFolder)) {
-      fs.mkdirSync(romFolder)
-    }
-    let fileList = fs.readdirSync(romFolder)
+    let fileList = fs.readdirSync(romPath)
     return fileList.map(file => ({
       fileName: file,
-      filePath: resolve(romFolder, file)
+      filePath: resolve(romPath, file)
     }))
   })
 
@@ -100,7 +113,7 @@ app.whenReady().then(() => {
     let fileNameWithExtension = basename(filePath);
     let fileExtension = extname(filePath); // 获取文件扩展名
     let folder = fileNameWithExtension.slice(0, -fileExtension.length);
-    const outputDir = join('../extracted_files', folder); // 提取后的文件保存目录
+    const outputDir = join(extractedFilesPath, folder); // 提取后的文件保存目录
     let pic = join(outputDir, "ICON0.PNG")
     // 使用7z e命令提取文件
     let exists = fs.existsSync(pic)
@@ -123,7 +136,7 @@ app.whenReady().then(() => {
     let fileNameWithExtension = basename(filePath);
     let fileExtension = extname(filePath); // 获取文件扩展名
     let folder = fileNameWithExtension.slice(0, -fileExtension.length);
-    const outputDir = join('../extracted_files', folder); // 提取后的文件保存目录
+    const outputDir = join(extractedFilesPath, folder); // 提取后的文件保存目录
     let sfo = join(outputDir, "PARAM.SFO")
     // 使用7z e命令提取文件
     let exists = fs.existsSync(sfo)
@@ -158,11 +171,7 @@ app.whenReady().then(() => {
         return
       }
       let filePath = result.filePaths[0];
-      let configFolder = '../config'
-      if (!fs.existsSync(configFolder)) {
-        fs.mkdirSync(configFolder)
-      }
-      fs.writeFileSync(join(configFolder, 'pspSimulatorFilePathConfig.txt'), filePath)
+      fs.writeFileSync(join(configPath, configFileName), filePath)
       mainWindow.webContents.send('pspSimulatorPathUpdate')
     }).catch(error => {
       console.log(error)
@@ -170,19 +179,16 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle("readPspSimulatorPath", (event) => {
-    let configPath = '../config/pspSimulatorFilePathConfig.txt';
-    let exists = fs.existsSync(configPath)
+    let configFilePath = join(configPath, configFileName)
+    let exists = fs.existsSync(configFilePath)
     if (!exists) {
       return null
     }
-    return fs.readFileSync(configPath).toString('utf-8')
+    return fs.readFileSync(configFilePath).toString('utf-8')
   })
 
   ipcMain.handle("readPspRomPath", (event) => {
-    if (!fs.existsSync(romFolder)) {
-      fs.mkdirSync(romFolder)
-    }
-    return resolve(romFolder)
+    return resolve(romPath)
   })
 })
 

@@ -11,7 +11,12 @@
                     @click="setupPspSimulator">设置PSP模拟器路径</el-button>
             </div>
             <div style="display: flex; flex-grow: 1; justify-content: right; margin-top: 10px; margin-bottom: 10px;">
-                <span>{{ pspSimulatorPath }}</span>
+                <div v-if="pspSimulatorPath">
+                    <span>{{ pspSimulatorPath }}</span>
+                </div>
+                <div v-else>
+                    <span>未设置PSP模拟器路径</span>
+                </div>
             </div>
 
             <el-scrollbar max-height="500px" height="500px">
@@ -44,6 +49,8 @@
 
 <script setup lang="ts" name="GameList">
 import { onMounted, reactive, ref, computed } from 'vue';
+import { ElMessage, ElMessageBox } from 'element-plus'
+import type { Action } from 'element-plus'
 import { type Game } from '../types/index';
 import psp from '@/resources/psp.png';
 
@@ -72,6 +79,18 @@ function isShow(gameName: string) {
 }
 
 function launchGame(path) {
+    if (!pspSimulatorPath.value) {
+        ElMessageBox.alert('请先设置PSP模拟器路径', '注意', {
+            confirmButtonText: '去设置',
+            callback: (action: Action) => {
+                if (action === 'confirm') {
+                    setupPspSimulator()
+                }
+                
+            },
+        })
+        return
+    }
     const ipcRenderer = window.electron.ipcRenderer;
     ipcRenderer.send("launchGame", pspSimulatorPath.value, path)
 }
@@ -123,10 +142,6 @@ async function readPspRomPath() {
 async function readPspSimulatorPath() {
     const ipcRenderer = window.electron.ipcRenderer;
     let path = await ipcRenderer.invoke("readPspSimulatorPath")
-    if (!path) {
-        pspSimulatorPath.value = '未设置PSP模拟器路径'
-        return
-    }
     pspSimulatorPath.value = path;
 }
 

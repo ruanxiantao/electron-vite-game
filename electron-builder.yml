@@ -1,5 +1,5 @@
-appId: com.electron.app
-productName: my-app
+appId: com.ruanxiantao.app
+productName: psp-iso-app
 directories:
   buildResources: build
 files:
@@ -11,12 +11,17 @@ files:
 asarUnpack:
   - resources/**
 win:
-  executableName: my-app
+  executableName: psp-iso-app
+  target:
+    - portable  # 指定打包为便携版
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
+  # oneClick: false
+  # perMachine: true
+  # allowToChangeInstallationDirectory: true
 mac:
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
