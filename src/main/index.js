@@ -67,6 +67,7 @@ app.whenReady().then(() => {
   let romFolder = '../roms';
   let extractedFilesFolder = '../extracted_files'
   let configFolder = '../config'
+  let zipToolFolder = '../7-Zip/7z'
   let appDir = ''
   if (!is.dev) {
     appDir = dirname(process.env.PORTABLE_EXECUTABLE_FILE);
@@ -74,6 +75,7 @@ app.whenReady().then(() => {
   let romPath = join(appDir, romFolder)
   let extractedFilesPath = join(appDir, extractedFilesFolder)
   let configPath = join(appDir, configFolder)
+  let zipToolPath = join(appDir, zipToolFolder)
 
   let configFileName = 'pspSimulatorFilePathConfig.txt'
 
@@ -121,7 +123,7 @@ app.whenReady().then(() => {
       return fs.readFileSync(pic)
     }
 
-    exec(`"../7-Zip/7z" e "${filePath}" "${fileToExtract}" -o"${outputDir}"`, (error, stdout, stderr) => {
+    exec(`${zipToolPath} e "${filePath}" "${fileToExtract}" -o"${outputDir}"`, (error, stdout, stderr) => {
       if (error) {
         console.error(`exec error: ${error}`);
         return null;
@@ -144,7 +146,7 @@ app.whenReady().then(() => {
       let sfoParser = new SFOParser(sfo)
       return sfoParser.getValue("TITLE")
     }
-    exec(`"../7-Zip/7z" e "${filePath}" "${fileToExtract}" -o"${outputDir}"`, (error, stdout, stderr) => {
+    exec(`${zipToolPath} e "${filePath}" "${fileToExtract}" -o"${outputDir}"`, (error, stdout, stderr) => {
       if (error) {
         console.error(`exec error: ${error}`);
       }
