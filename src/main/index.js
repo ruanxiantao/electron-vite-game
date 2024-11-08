@@ -68,14 +68,16 @@ app.whenReady().then(() => {
   let extractedFilesFolder = '../extracted_files'
   let configFolder = '../config'
   let zipToolFolder = '../7-Zip/7z'
+  let defaultPspSimulator = '../ppsspp_win/PPSSPPWindows64.exe'
   let appDir = ''
   if (!is.dev) {
-    appDir = dirname(process.env.PORTABLE_EXECUTABLE_FILE);
+    appDir = process.env.PORTABLE_EXECUTABLE_FILE
   }
   let romPath = join(appDir, romFolder)
   let extractedFilesPath = join(appDir, extractedFilesFolder)
   let configPath = join(appDir, configFolder)
   let zipToolPath = join(appDir, zipToolFolder)
+  let defaultPspSimulatorPath = join(appDir, defaultPspSimulator)
 
   let configFileName = 'pspSimulatorFilePathConfig.txt'
 
@@ -184,6 +186,9 @@ app.whenReady().then(() => {
     let configFilePath = join(configPath, configFileName)
     let exists = fs.existsSync(configFilePath)
     if (!exists) {
+      if (fs.existsSync(defaultPspSimulatorPath)) {
+        return resolve(defaultPspSimulatorPath);
+      }
       return null
     }
     return fs.readFileSync(configFilePath).toString('utf-8')
